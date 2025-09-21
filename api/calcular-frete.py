@@ -1,16 +1,16 @@
 import os
+import json
+import requests
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-import requests
-import json
 
 # 🔐 Pega o token da variável de ambiente (definida na Vercel)
 SUPERFRETE_TOKEN = os.environ.get("SUPERFRETE_TOKEN")
 if not SUPERFRETE_TOKEN:
     raise ValueError("A variável de ambiente SUPERFRETE_TOKEN não está definida!")
 
-# 🧭 URL base da SuperFrete com token
+# 🧭 URL base da SuperFrete com token como query string
 SUPERFRETE_URL = (
     f"https://api.superfrete.com/api/v0/calculator"
     f"?Authorization=Bearer%20{SUPERFRETE_TOKEN}"
@@ -23,9 +23,9 @@ app = FastAPI()
 # ✅ CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],  # permite todas origens
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["*"],   # GET, POST, PUT, DELETE...
     allow_headers=["*"],
 )
 
@@ -42,6 +42,9 @@ class FreteRequest(BaseModel):
 
 @app.post("/calcular-frete")
 def calcular_frete(data: FreteRequest):
+    print("🚚 Nova requisição recebida para /calcular-frete")
+    print("📨 JSON recebido:", data.dict())
+
     payload = {
         "from": {"postal_code": "25065007"},
         "to": {"postal_code": str(data.cepDestino)},
@@ -60,15 +63,28 @@ def calcular_frete(data: FreteRequest):
         }
     }
 
+    payload_json = json.dumps(payload)
+    print("📦 Payload JSON enviado para SuperFrete:")
+    print(payload_json)
+
     headers = {"Content-Type": "application/json"}
 
     try:
-        response = requests.post(SUPERFRETE_URL, headers=headers, data=json.dumps(payload), timeout=10)
-        response.raise_for_status()
-        result = response.json()
+        print(f"🌍 Fazendo requisição para SuperFrete: {SUPERFRETE_URL}")
+        response = requests.post(SUPERFRETE_URL, headers=headers, data=payload_json, timeout=10)
+        print(f"📬 Status code da SuperFrete: {response.status_code}")
+
+        try:
+            result = response.json()
+            print("📥 Resposta JSON da SuperFrete:")
+            print(json.dumps(result, indent=2, ensure_ascii=False))
+        except ValueError:
+            print("⚠️ Resposta da SuperFrete não é JSON:")
+            print(response.text)
+            raise HTTPException(status_code=502, detail={"erro": "Resposta não é JSON", "texto": response.text})
+
     except requests.exceptions.RequestException as e:
-        raise HTTPException(status_code=502, detail=f"Falha na comunicação com SuperFrete: {e}")
-    except ValueError:
-        raise HTTPException(status_code=502, detail=f"Resposta da SuperFrete não é JSON: {response.text}")
+        print("❌ Erro ao chamar SuperFrete:", str(e))
+        raise HTTPException(status_code=502, detail={"erro": "Falha na comunicação com SuperFrete", "detalhes": str(e)})
 
     return result

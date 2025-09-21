@@ -1,11 +1,11 @@
-from http import HTTPStatus
+import os
 import requests
 import json
-from flask import jsonify, request
-from flask_cors import cross_origin
 
-# 🔐 Token da SuperFrete
-SUPERFRETE_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3NTY3NTQ3NzcsInN1YiI6IlkydGZOTWhHQVFaNXFQUmF5VG1hWFEzT0ZoNTIifQ.Oo0CzxnRtwOPmBBAJgQBIz4U06qcVmrwLOic8CnyDe0"
+# 🔐 Token da SuperFrete via variável de ambiente
+SUPERFRETE_TOKEN = os.environ.get("SUPERFRETE_TOKEN")
+if not SUPERFRETE_TOKEN:
+    raise RuntimeError("Variável de ambiente SUPERFRETE_TOKEN não definida")
 
 SUPERFRETE_URL = (
     f"https://api.superfrete.com/api/v0/calculator"
@@ -14,14 +14,17 @@ SUPERFRETE_URL = (
     f"&content-type=application%2Fjson"
 )
 
-@cross_origin()  # libera CORS
 def handler(request):
     if request.method != "POST":
-        return jsonify({"erro": "Método não permitido"}), HTTPStatus.METHOD_NOT_ALLOWED
+        return {"erro": "Método não permitido"}, 405
 
-    data = request.get_json(silent=True)
+    try:
+        data = request.json
+    except Exception:
+        data = None
+
     if not data or "cepDestino" not in data or "pacote" not in data:
-        return jsonify({"erro": "JSON inválido ou campos ausentes"}), HTTPStatus.BAD_REQUEST
+        return {"erro": "JSON inválido ou campos ausentes"}, 400
 
     cep_destino = data["cepDestino"]
     pacote = data["pacote"]
@@ -55,9 +58,10 @@ def handler(request):
             result = response.json()
         except ValueError:
             result = {"erro": "Resposta não é JSON", "texto": response.text}
-            return jsonify(result), HTTPStatus.BAD_GATEWAY
+            return result, 502
     except requests.exceptions.RequestException as e:
-        result = {"erro": "Falha na comunicação com SuperFrete", "detalhes": str(e)}
-        return jsonify(result), HTTPStatus.BAD_GATEWAY
+        return {"erro": "Falha na comunicação com SuperFrete", "detalhes": str(e)}, 502
 
-    return jsonify(result), response.status_code
+    # CORS simples
+    headers = {"Access-Control-Allow-Origin": "*"}
+    return result, response.status_code, headers

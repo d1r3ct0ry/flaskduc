@@ -1,78 +1,79 @@
-from flask import Flask, request, jsonify
-
-from flask_cors import CORS
-import requests
+from flask import Flask, request, jsonify, make_response
+import requests, os, json, uuid, time, logging
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
-import json
-import os
-import time
-import uuid
-import logging
 
-# ==================== Configurações ====================
 app = Flask(__name__)
-CORS(app)
 
-# Logging estruturado
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+# Logging
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("superfrete-api")
 
-# Token da SuperFrete via variável de ambiente
 SUPERFRETE_TOKEN = os.environ.get("SUPERFRETE_TOKEN")
 if not SUPERFRETE_TOKEN:
-    logger.error("SUPERFRETE_TOKEN não configurado")
     raise RuntimeError("SUPERFRETE_TOKEN não configurado")
 
-# URL base da SuperFrete
-SUPERFRETE_URL = (
-    "https://api.superfrete.com/api/v0/calculator"
-    f"?Authorization=Bearer%20{SUPERFRETE_TOKEN}"
-    "&accept=application%2Fjson"
-    "&content-type=application%2Fjson"
-)
+SUPERFRETE_URL = f"https://api.superfrete.com/api/v0/calculator?Authorization=Bearer%20{SUPERFRETE_TOKEN}&accept=application/json&content-type=application/json"
 
-# Session com retry/backoff
 session = requests.Session()
-retries = Retry(
-    total=3,
-    backoff_factor=1,
-    status_forcelist=[429, 502, 503, 504],
-    allowed_methods=["POST"]
-)
+retries = Retry(total=3, backoff_factor=1, status_forcelist=[429,502,503,504], allowed_methods=["POST"])
 session.mount("https://", HTTPAdapter(max_retries=retries))
 
-# ==================== Endpoint ====================
-@app.route("/api/calcular-frete", methods=["POST"])
+def cors_response(payload, status=200):
+    response = make_response(jsonify(payload), status)
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Methods"] = "POST, OPTIONS"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type"
+    return response
+
+@app.route("/api/calcular-frete", methods=["POST","OPTIONS"])
 def calcular_frete():
+    if request.method == "OPTIONS":
+        return cors_response({"status":"ok"},200)
+
     request_id = str(uuid.uuid4())
     start_time = time.time()
-
     data = request.get_json(silent=True)
 
-
-    # Validação de payload
     if not data or "cepDestino" not in data or "pacote" not in data:
-        msg = "JSON inválido ou campos ausentes"
-        logger.warning(msg, extra={"request_id": request_id, "payload": data})
-        return jsonify({
+        return cors_response({
             "request_id": request_id,
-            "status": "erro",
-            "mensagem": msg
-        }), 400
+            "status":"erro",
+            "mensagem":"JSON inválido ou campos ausentes"
+        },400)
 
     cep_destino = data["cepDestino"]
     pacote = data["pacote"]
-@@ -40,7 +72,6 @@ def calcular_frete():
-            "insurance_value": 0,
-            "use_insurance_value": False
-        },
 
-        "package": {
-            "height": pacote.get("height", 2),
-            "width": pacote.get("width", 11),
-@@ -49,41 +80,57 @@ def calcular_frete():
+    payload = {
+        "from":{"postal_code":"25065007"},
+        "to":{"postal_code":str(cep_destino)},
+        "services":"1,2",
+        "options":{"own_hand":False,"receipt":False,"insurance_value":0,"use_insurance_value":False},
+        "package":{
+            "height": pacote.get("height",2),
+            "width": pacote.get("width",11),
+            "length": pacote.get("length",16),
+            "weight": pacote.get("weight",0.3)
         }
     }
 
-    logger.info("Chamando SuperFrete", extra={"request_id": request_id, "payload": payload})
+    try:
+        resp = session.post(SUPERFRETE_URL, headers={"Content-Type":"application/json"}, data=json.dumps(payload), timeout=10)
+        resultado_json = resp.json()
+        elapsed_time = round(time.time()-start_time,3)
+        return cors_response({
+            "request_id": request_id,
+            "status":"ok",
+            "elapsed_time": elapsed_time,
+            "resultado": resultado_json
+        }, resp.status_code)
+    except Exception as e:
+        elapsed_time = round(time.time()-start_time,3)
+        return cors_response({
+            "request_id": request_id,
+            "status":"erro",
+            "mensagem":"Falha na comunicação com SuperFrete",
+            "detalhes": str(e),
+            "elapsed_time": elapsed_time
+        },502)

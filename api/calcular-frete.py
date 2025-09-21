@@ -2,12 +2,13 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import requests
 import json
+import os  # <-- Import necessário para variáveis de ambiente
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
 
-# 🔐 Token diretamente no código
-SUPERFRETE_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3NTY3NTQ3NzcsInN1YiI6IlkydGZOTWhHQVFaNXFQUmF5VG1hWFEzT0ZoNTIifQ.Oo0CzxnRtwOPmBBAJgQBIz4U06qcVmrwLOic8CnyDe0"
+# 🔐 Token vindo da variável de ambiente da Vercel
+SUPERFRETE_TOKEN = os.environ.get("SUPERFRETE_TOKEN")
 SUPERFRETE_URL = "https://api.superfrete.com/api/v0/calculator"
 
 @app.route("/api/calcular-frete", methods=["POST"])

@@ -1,10 +1,10 @@
 {
-  "version": 2,
+  "version": 2
   },
   "routes": [
     {
       "src": "/calcular-frete",
-      "dest": "/api/main.py"
+      "dest": "/api/calcular-frete.py"
     }
   ]
 }

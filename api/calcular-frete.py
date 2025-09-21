@@ -11,7 +11,7 @@ CORS(app, resources={r"/*": {"origins": "*"}})
 SUPERFRETE_TOKEN = os.environ.get("SUPERFRETE_TOKEN")
 SUPERFRETE_URL = "https://api.superfrete.com/api/v0/calculator"
 
-@app.route("/", methods=["POST"])
+@app.route("/api/calcular-frete", methods=["POST"])
 def calcular_frete():
     data = request.get_json(silent=True)
 
@@ -60,3 +60,4 @@ def calcular_frete():
         return jsonify({"erro": "Resposta não é JSON", "texto": response.text}), 502
 
     return jsonify(result), response.status_code
+

@@ -6,9 +6,9 @@ import json
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
 
-# 🔐 Token hardcoded para teste local
-SUPERFRETE_TOKEN = os.environ.get("SUPERFRETE_TOKEN")
-SUPERFRETE_URL = os.environ.get("API_URL", "https://api.superfrete.com/api/v0/calculator")
+# 🔐 Token hardcoded para teste local 
+SUPERFRETE_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3NTg0MjIyODUsInN1YiI6IlkydGZOTWhHQVFaNXFQUmF5VG1hWFEzT0ZoNTIifQ.LuSMsrO3NUXQGGT5yKbPN-2kvsVU-8ARzWT1u2u4Sp8" 
+SUPERFRETE_URL = "https://api.superfrete.com/api/v0/calculator"
 
 @app.route("/api/calcular-frete", methods=["POST"])
 def calcular_frete():

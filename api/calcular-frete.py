@@ -10,7 +10,7 @@ SUPERFRETE_TOKEN = os.environ.get("SUPERFRETE_TOKEN")
 if not SUPERFRETE_TOKEN:
     raise ValueError("A variável de ambiente SUPERFRETE_TOKEN não está definida!")
 
-# 🧭 URL base da SuperFrete com token como query string
+# 🧭 URL base da SuperFrete com token na query string
 SUPERFRETE_URL = (
     f"https://api.superfrete.com/api/v0/calculator"
     f"?Authorization=Bearer%20{SUPERFRETE_TOKEN}"
@@ -20,12 +20,12 @@ SUPERFRETE_URL = (
 
 app = FastAPI()
 
-# ✅ CORS
+# ✅ Configuração CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # permite todas origens
+    allow_origins=["*"],  
     allow_credentials=True,
-    allow_methods=["*"],   # GET, POST, PUT, DELETE...
+    allow_methods=["*"],  
     allow_headers=["*"],
 )
 

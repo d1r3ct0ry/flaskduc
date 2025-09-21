@@ -2,13 +2,13 @@
   "version": 2,
   "functions": {
     "api/*.py": {
-      "runtime": "vercel-python@1.0.0"
+      "runtime": "python3.10"
     }
   },
   "routes": [
     {
-      "src": "/api/(.*)",
-      "dest": "/api/calcular-frete.py"
+      "src": "/api/calcular-frete",
+      "dest": "/api/main.py"
     }
   ]
 }

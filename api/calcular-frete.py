@@ -1,54 +1,59 @@
-from flask import Flask, request, jsonify, make_response
-import requests, os, json, uuid, time
+from http import HTTPStatus
+import requests
+import json
+from flask import jsonify, request
+from flask_cors import cross_origin
 
-app = Flask(__name__)
+# 🔐 Token da SuperFrete
+SUPERFRETE_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3NTY3NTQ3NzcsInN1YiI6IlkydGZOTWhHQVFaNXFQUmF5VG1hWFEzT0ZoNTIifQ.Oo0CzxnRtwOPmBBAJgQBIz4U06qcVmrwLOic8CnyDe0"
 
-SUPERFRETE_TOKEN = os.environ.get("SUPERFRETE_TOKEN")
-if not SUPERFRETE_TOKEN:
-    raise RuntimeError("SUPERFRETE_TOKEN não configurado")
+SUPERFRETE_URL = (
+    f"https://api.superfrete.com/api/v0/calculator"
+    f"?Authorization=Bearer%20{SUPERFRETE_TOKEN}"
+    f"&accept=application%2Fjson"
+    f"&content-type=application%2Fjson"
+)
 
-SUPERFRETE_URL = f"https://api.superfrete.com/api/v0/calculator?Authorization=Bearer%20{SUPERFRETE_TOKEN}"
+# Função de entrada do Vercel
+@cross_origin()  # libera CORS
+def handler(request):
+    if request.method != "POST":
+        return jsonify({"erro": "Método não permitido"}), HTTPStatus.METHOD_NOT_ALLOWED
 
-FRONTEND_DOMAIN = "https://ducentregas.com"  # <-- seu frontend
-
-def cors_response(payload, status=200):
-    response = make_response(jsonify(payload), status)
-    response.headers["Access-Control-Allow-Origin"] = FRONTEND_DOMAIN
-    response.headers["Access-Control-Allow-Methods"] = "POST, OPTIONS"
-    response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
-    response.headers["Access-Control-Allow-Credentials"] = "true"
-    return response
-
-@app.route("/api/calcular-frete", methods=["POST", "OPTIONS"])
-def calcular_frete():
-    if request.method == "OPTIONS":
-        return cors_response({"status": "ok"}, 200)
-
-    request_id = str(uuid.uuid4())
-    start_time = time.time()
     data = request.get_json(silent=True)
-
     if not data or "cepDestino" not in data or "pacote" not in data:
-        return cors_response({"request_id": request_id, "status": "erro", "mensagem": "JSON inválido ou campos ausentes"}, 400)
+        return jsonify({"erro": "JSON inválido ou campos ausentes"}), HTTPStatus.BAD_REQUEST
+
+    cep_destino = data["cepDestino"]
+    pacote = data["pacote"]
 
     payload = {
         "from": {"postal_code": "25065007"},
-        "to": {"postal_code": str(data["cepDestino"])},
+        "to": {"postal_code": str(cep_destino)},
         "services": "1,2",
-        "options": {"own_hand": False, "receipt": False, "insurance_value": 0, "use_insurance_value": False},
+        "options": {
+            "own_hand": False,
+            "receipt": False,
+            "insurance_value": 0,
+            "use_insurance_value": False
+        },
         "package": {
-            "height": data["pacote"].get("height", 2),
-            "width": data["pacote"].get("width", 11),
-            "length": data["pacote"].get("length", 16),
-            "weight": data["pacote"].get("weight", 0.3)
+            "height": pacote.get("height", 2),
+            "width": pacote.get("width", 11),
+            "length": pacote.get("length", 16),
+            "weight": pacote.get("weight", 0.3)
         }
     }
 
     try:
-        resp = requests.post(SUPERFRETE_URL, headers={"Content-Type": "application/json"}, json=payload, timeout=10)
-        resultado_json = resp.json()
-        elapsed_time = round(time.time() - start_time, 3)
-        return cors_response({"request_id": request_id, "status": "ok", "elapsed_time": elapsed_time, "resultado": resultado_json}, resp.status_code)
-    except Exception as e:
-        elapsed_time = round(time.time() - start_time, 3)
-        return cors_response({"request_id": request_id, "status": "erro", "mensagem": "Falha na comunicação com SuperFrete", "detalhes": str(e), "elapsed_time": elapsed_time}, 502)
+        response = requests.post(SUPERFRETE_URL, headers={"Content-Type": "application/json"}, data=json.dumps(payload), timeout=10)
+        try:
+            result = response.json()
+        except ValueError:
+            result = {"erro": "Resposta não é JSON", "texto": response.text}
+            return jsonify(result), HTTPStatus.BAD_GATEWAY
+    except requests.exceptions.RequestException as e:
+        result = {"erro": "Falha na comunicação com SuperFrete", "detalhes": str(e)}
+        return jsonify(result), HTTPStatus.BAD_GATEWAY
+
+    return jsonify(result), response.status_code

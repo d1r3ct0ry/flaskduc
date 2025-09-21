@@ -1,17 +1,16 @@
 import os
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 import requests
 import json
-from flask import Flask, request, jsonify
-from flask_cors import CORS
 
-app = Flask(__name__)
-# â Libera CORS para todas rotas, todos mÃ©todos e headers
-CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
-
+# 🔐 Pega o token da variável de ambiente (definida na Vercel)
 SUPERFRETE_TOKEN = os.environ.get("SUPERFRETE_TOKEN")
 if not SUPERFRETE_TOKEN:
-    raise RuntimeError("SUPERFRETE_TOKEN nÃ£o definido")
+    raise ValueError("A variável de ambiente SUPERFRETE_TOKEN não está definida!")
 
+# 🧭 URL base da SuperFrete com token
 SUPERFRETE_URL = (
     f"https://api.superfrete.com/api/v0/calculator"
     f"?Authorization=Bearer%20{SUPERFRETE_TOKEN}"
@@ -19,22 +18,33 @@ SUPERFRETE_URL = (
     f"&content-type=application%2Fjson"
 )
 
-@app.route("/calcular-frete", methods=["POST", "OPTIONS"])
-def calcular_frete():
-    # Flask-CORS jÃ¡ trata OPTIONS, mas podemos reforÃ§ar
-    if request.method == "OPTIONS":
-        return jsonify({}), 204
+app = FastAPI()
 
-    data = request.get_json(silent=True)
-    if not data or "cepDestino" not in data or "pacote" not in data:
-        return jsonify({"erro": "JSON invÃ¡lido ou campos ausentes"}), 400
+# ✅ CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-    cep_destino = data["cepDestino"]
-    pacote = data["pacote"]
+# 📝 Modelos de dados
+class Pacote(BaseModel):
+    height: float = 2
+    width: float = 11
+    length: float = 16
+    weight: float = 0.3
 
+class FreteRequest(BaseModel):
+    cepDestino: str
+    pacote: Pacote
+
+@app.post("/calcular-frete")
+def calcular_frete(data: FreteRequest):
     payload = {
         "from": {"postal_code": "25065007"},
-        "to": {"postal_code": str(cep_destino)},
+        "to": {"postal_code": str(data.cepDestino)},
         "services": "1,2",
         "options": {
             "own_hand": False,
@@ -43,26 +53,22 @@ def calcular_frete():
             "use_insurance_value": False
         },
         "package": {
-            "height": pacote.get("height", 2),
-            "width": pacote.get("width", 11),
-            "length": pacote.get("length", 16),
-            "weight": pacote.get("weight", 0.3)
+            "height": data.pacote.height,
+            "width": data.pacote.width,
+            "length": data.pacote.length,
+            "weight": data.pacote.weight
         }
     }
 
+    headers = {"Content-Type": "application/json"}
+
     try:
-        response = requests.post(
-            SUPERFRETE_URL,
-            headers={"Content-Type": "application/json"},
-            data=json.dumps(payload),
-            timeout=10
-        )
-        try:
-            result = response.json()
-        except ValueError:
-            return jsonify({"erro": "Resposta nÃ£o Ã© JSON", "texto": response.text}), 502
-
+        response = requests.post(SUPERFRETE_URL, headers=headers, data=json.dumps(payload), timeout=10)
+        response.raise_for_status()
+        result = response.json()
     except requests.exceptions.RequestException as e:
-        return jsonify({"erro": "Falha na comunicaÃ§Ã£o com SuperFrete", "detalhes": str(e)}), 502
+        raise HTTPException(status_code=502, detail=f"Falha na comunicação com SuperFrete: {e}")
+    except ValueError:
+        raise HTTPException(status_code=502, detail=f"Resposta da SuperFrete não é JSON: {response.text}")
 
-    return jsonify(result), response.status_code
+    return result

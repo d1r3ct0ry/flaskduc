@@ -1,12 +1,6 @@
 import os
 import requests
 import json
-from flask import Flask, request, jsonify
-from flask_cors import CORS
-
-app = Flask(__name__)
-# ✅ Libera CORS para todas rotas, todos métodos e headers
-CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 
 SUPERFRETE_TOKEN = os.environ.get("SUPERFRETE_TOKEN")
 if not SUPERFRETE_TOKEN:
@@ -19,15 +13,25 @@ SUPERFRETE_URL = (
     f"&content-type=application%2Fjson"
 )
 
-@app.route("/calcular-frete", methods=["POST", "OPTIONS"])
-def calcular_frete():
-    # Flask-CORS já trata OPTIONS, mas podemos reforçar
+def handler(request):
+    # ✅ Tratar preflight
     if request.method == "OPTIONS":
-        return jsonify({}), 204
+        return {}, 204, {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "POST, OPTIONS",
+            "Access-Control-Allow-Headers": "Content-Type",
+        }
 
-    data = request.get_json(silent=True)
+    if request.method != "POST":
+        return {"erro": "Método não permitido"}, 405, {"Access-Control-Allow-Origin": "*"}
+
+    try:
+        data = request.json
+    except Exception:
+        data = None
+
     if not data or "cepDestino" not in data or "pacote" not in data:
-        return jsonify({"erro": "JSON inválido ou campos ausentes"}), 400
+        return {"erro": "JSON inválido ou campos ausentes"}, 400, {"Access-Control-Allow-Origin": "*"}
 
     cep_destino = data["cepDestino"]
     pacote = data["pacote"]
@@ -60,9 +64,9 @@ def calcular_frete():
         try:
             result = response.json()
         except ValueError:
-            return jsonify({"erro": "Resposta não é JSON", "texto": response.text}), 502
-
+            return {"erro": "Resposta não é JSON", "texto": response.text}, 502, {"Access-Control-Allow-Origin": "*"}
     except requests.exceptions.RequestException as e:
-        return jsonify({"erro": "Falha na comunicação com SuperFrete", "detalhes": str(e)}), 502
+        return {"erro": "Falha na comunicação com SuperFrete", "detalhes": str(e)}, 502, {"Access-Control-Allow-Origin": "*"}
 
-    return jsonify(result), response.status_code
+    headers = {"Access-Control-Allow-Origin": "*"}
+    return result, response.status_code, headers

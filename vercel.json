@@ -7,7 +7,14 @@
     },
     {
       "src": "/frete",
-      "dest": "/public/frete.html"
+      "dest": "/frete.html",
+      "headers": {
+        "cache-control": "s-maxage=1, stale-while-revalidate"
+      }
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/public/$1"
     }
   ]
 }

@@ -2,15 +2,12 @@
   "version": 2,
   "routes": [
     {
-      "src": "/api/calcular-frete",
-      "dest": "/api/calcular-frete.py"
+      "src": "/api/(.*)",
+      "dest": "/api/$1"
     },
     {
       "src": "/frete",
-      "dest": "/frete.html",
-      "headers": {
-        "cache-control": "s-maxage=1, stale-while-revalidate"
-      }
+      "dest": "/public/frete.html"
     },
     {
       "src": "/(.*)",

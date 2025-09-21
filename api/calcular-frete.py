@@ -7,8 +7,8 @@ app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
 
 # 🔐 Token hardcoded para teste local
-SUPERFRETE_TOKEN = os.environ.get('SUPERFRETE_TOKEN')
-SUPERFRETE_URL = "https://api.superfrete.com/api/v0/calculator"
+SUPERFRETE_TOKEN = os.environ.get("SUPERFRETE_TOKEN")
+SUPERFRETE_URL = os.environ.get("API_URL", "https://api.superfrete.com/api/v0/calculator")
 
 @app.route("/api/calcular-frete", methods=["POST"])
 def calcular_frete():
@@ -56,5 +56,6 @@ def calcular_frete():
         return jsonify({"erro": "Resposta não é JSON", "texto": response.text}), 502
 
     return jsonify(result), response.status_code
+
 
 

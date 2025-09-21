@@ -1,15 +1,11 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import requests
-import json
+import requests, json
 
-# Cria a app Flask
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "*"}})
+CORS(app)
 
-# Token da SuperFrete
-SUPERFRETE_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3NTY3NTQ3NzcsInN1YiI6IlkXVCJ9.Oo0CzxnRtwOPmBBAJgQBIz4U06qcVmrwLOic8CnyDe0"
-
+SUPERFRETE_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 SUPERFRETE_URL = (
     f"https://api.superfrete.com/api/v0/calculator"
     f"?Authorization=Bearer%20{SUPERFRETE_TOKEN}"
@@ -20,7 +16,6 @@ SUPERFRETE_URL = (
 @app.route("/api/calcular-frete", methods=["POST"])
 def calcular_frete():
     data = request.get_json(silent=True)
-
     if not data or "cepDestino" not in data or "pacote" not in data:
         return jsonify({"erro": "JSON inválido ou campos ausentes"}), 400
 
@@ -31,12 +26,7 @@ def calcular_frete():
         "from": {"postal_code": "25065007"},
         "to": {"postal_code": str(cep_destino)},
         "services": "1,2",
-        "options": {
-            "own_hand": False,
-            "receipt": False,
-            "insurance_value": 0,
-            "use_insurance_value": False
-        },
+        "options": {"own_hand": False,"receipt": False,"insurance_value":0,"use_insurance_value":False},
         "package": {
             "height": pacote.get("height", 2),
             "width": pacote.get("width", 11),
@@ -59,12 +49,3 @@ def calcular_frete():
         return jsonify({"erro": "Resposta não é JSON", "texto": response.text}), 502
 
     return jsonify(result), response.status_code
-
-# Função serverless para Vercel
-def handler(environ, start_response):
-    from werkzeug.wrappers import Request, Response
-
-    request = Request(environ)
-    with app.request_context(environ):
-        resp = app.full_dispatch_request()
-        return resp(environ, start_response)

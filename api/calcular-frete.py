@@ -1,15 +1,17 @@
-pofrom flask import Flask, request, jsonify
+import os
 import requests
-from flask_cors import CORS
 import json
+from flask import Flask, request, jsonify
+from flask_cors import CORS
 
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "*"}})
+# â Libera CORS para todas rotas, todos mÃ©todos e headers
+CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 
-# 🔐 Token de autenticação da SuperFrete
-SUPERFRETE_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3NTY3NTQ3NzcsInN1YiI6IlkydGZOTWhHQVFaNXFQUmF5VG1hWFEzT0ZoNTIifQ.Oo0CzxnRtwOPmBBAJgQBIz4U06qcVmrwLOic8CnyDe0"
+SUPERFRETE_TOKEN = os.environ.get("SUPERFRETE_TOKEN")
+if not SUPERFRETE_TOKEN:
+    raise RuntimeError("SUPERFRETE_TOKEN nÃ£o definido")
 
-# 🧭 URL com token e headers como query strings (reproduzindo curl funcional)
 SUPERFRETE_URL = (
     f"https://api.superfrete.com/api/v0/calculator"
     f"?Authorization=Bearer%20{SUPERFRETE_TOKEN}"
@@ -17,15 +19,15 @@ SUPERFRETE_URL = (
     f"&content-type=application%2Fjson"
 )
 
-@app.route("/calcular-frete", methods=["POST"])
+@app.route("/calcular-frete", methods=["POST", "OPTIONS"])
 def calcular_frete():
-    print("🚚 Nova requisição recebida para /calcular-frete")
+    # Flask-CORS jÃ¡ trata OPTIONS, mas podemos reforÃ§ar
+    if request.method == "OPTIONS":
+        return jsonify({}), 204
 
     data = request.get_json(silent=True)
-    print("📨 JSON recebido:", data)
-
     if not data or "cepDestino" not in data or "pacote" not in data:
-        return jsonify({"erro": "JSON inválido ou campos ausentes"}), 400
+        return jsonify({"erro": "JSON invÃ¡lido ou campos ausentes"}), 400
 
     cep_destino = data["cepDestino"]
     pacote = data["pacote"]
@@ -40,7 +42,6 @@ def calcular_frete():
             "insurance_value": 0,
             "use_insurance_value": False
         },
-        # usa os valores enviados do frontend
         "package": {
             "height": pacote.get("height", 2),
             "width": pacote.get("width", 11),
@@ -49,41 +50,19 @@ def calcular_frete():
         }
     }
 
-
-    payload_json = json.dumps(payload)
-    print("📦 Payload JSON enviado para SuperFrete:")
-    print(payload_json)
-
-    headers = {
-        "Content-Type": "application/json"
-        # ❌ NÃO usa mais Authorization aqui, está na URL
-    }
-
-    # 3️⃣ Chamada para a API da SuperFrete
     try:
-        print(f"🌍 Fazendo requisição para SuperFrete: {SUPERFRETE_URL}")
-        print(f"📤 Headers enviados: {headers}")
-
-        response = requests.post(SUPERFRETE_URL, headers=headers, data=payload_json, timeout=10)
-        print(f"📬 Status code da SuperFrete: {response.status_code}")
-
+        response = requests.post(
+            SUPERFRETE_URL,
+            headers={"Content-Type": "application/json"},
+            data=json.dumps(payload),
+            timeout=10
+        )
         try:
             result = response.json()
-            print("📥 Resposta JSON da SuperFrete:")
-            print(json.dumps(result, indent=2, ensure_ascii=False))
         except ValueError:
-            result = {"erro": "Resposta não é JSON", "texto": response.text}
-            print("⚠️ Resposta da SuperFrete não é JSON:")
-            print(response.text)
-            return jsonify(result), 502
+            return jsonify({"erro": "Resposta nÃ£o Ã© JSON", "texto": response.text}), 502
 
     except requests.exceptions.RequestException as e:
-        print("❌ Erro ao chamar SuperFrete:", str(e))
-        result = {"erro": "Falha na comunicação com SuperFrete", "detalhes": str(e)}
-        return jsonify(result), 502
+        return jsonify({"erro": "Falha na comunicaÃ§Ã£o com SuperFrete", "detalhes": str(e)}), 502
 
-    # 4️⃣ Retornar SOMENTE o que a SuperFrete retornou
     return jsonify(result), response.status_code
-
-if __name__ == "__main__":
-    app.run(debug=True)

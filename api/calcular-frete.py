@@ -17,7 +17,7 @@ SUPERFRETE_URL = (
     f"&content-type=application%2Fjson"
 )
 
-@app.route("/api/calcular-frete", methods=["POST"])
+@app.route("/", methods=["POST"])
 def calcular_frete():
     data = request.get_json(silent=True)
 
@@ -59,3 +59,4 @@ def calcular_frete():
         return jsonify({"erro": "Resposta não é JSON", "texto": response.text}), 502
 
     return jsonify(result), response.status_code
+

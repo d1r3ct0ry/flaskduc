@@ -1,9 +1,17 @@
 {
   "version": 2,
+  "builds": [
+    {
+      "src": "api/calcular-frete.py",
+      "use": "@vercel/python",
+      "config": { "runtime": "python3.11" }
+    }
+  ],
   "routes": [
     {
-      "src": "/api/(.*)",
-      "dest": "/api/calcular-frete.py"
+      "src": "/api/calcular-frete",
+      "methods": ["POST", "OPTIONS"],
+      "dest": "api/calcular-frete.py"
     }
   ]
 }

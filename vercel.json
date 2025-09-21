@@ -4,6 +4,10 @@
     {
       "src": "/api/calcular-frete",
       "dest": "/api/calcular-frete.py"
+    },
+    {
+      "src": "/frete",
+      "dest": "/public/frete.html"
     }
   ]
 }

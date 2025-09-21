@@ -14,7 +14,6 @@ SUPERFRETE_URL = (
     f"&content-type=application%2Fjson"
 )
 
-# Função de entrada do Vercel
 @cross_origin()  # libera CORS
 def handler(request):
     if request.method != "POST":
@@ -46,7 +45,12 @@ def handler(request):
     }
 
     try:
-        response = requests.post(SUPERFRETE_URL, headers={"Content-Type": "application/json"}, data=json.dumps(payload), timeout=10)
+        response = requests.post(
+            SUPERFRETE_URL,
+            headers={"Content-Type": "application/json"},
+            data=json.dumps(payload),
+            timeout=10
+        )
         try:
             result = response.json()
         except ValueError:

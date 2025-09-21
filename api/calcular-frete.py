@@ -14,7 +14,7 @@ SUPERFRETE_URL = (
 )
 
 def handler(request):
-    # ✅ Tratar preflight
+    # ✅ Preflight
     if request.method == "OPTIONS":
         return {}, 204, {
             "Access-Control-Allow-Origin": "*",
@@ -22,6 +22,7 @@ def handler(request):
             "Access-Control-Allow-Headers": "Content-Type",
         }
 
+    # Apenas POST
     if request.method != "POST":
         return {"erro": "Método não permitido"}, 405, {"Access-Control-Allow-Origin": "*"}
 
@@ -68,5 +69,4 @@ def handler(request):
     except requests.exceptions.RequestException as e:
         return {"erro": "Falha na comunicação com SuperFrete", "detalhes": str(e)}, 502, {"Access-Control-Allow-Origin": "*"}
 
-    headers = {"Access-Control-Allow-Origin": "*"}
-    return result, response.status_code, headers
+    return result, response.status_code, {"Access-Control-Allow-Origin": "*"}

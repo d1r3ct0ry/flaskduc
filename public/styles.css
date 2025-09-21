@@ -1,0 +1,187 @@
+/* Estilos para a barra de cabe�alho */
+.header {
+    background-color: #ffffff; /* Cor de fundo branca */
+    height: 70px; /* Altura da barra de cabe�alho */
+}
+
+/* Estilos para o corpo da p�gina */
+body {
+    font-family: Arial, sans-serif;
+    background-color: rgb(235, 235, 235); /* Cor de fundo */
+    margin: 0;
+    padding: 0;
+}
+
+/* Container principal */
+.container {
+    width: 90%; /* Largura do container */
+    max-width: 600px; /* Largura m�xima */
+    height: 250px;
+    background-color: #ff6300;
+    border-radius: 8px;
+    text-align: center; /* Centralizar conte�do */
+    padding: 20px;
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+    margin: 40px auto 0; /* Margens */
+}
+
+/* Texto principal */
+.princip {
+    max-width: 100%; /* Largura m�xima */
+    margin-bottom: 20px;
+    margin-top: 25px;
+    font-size: 28px;
+    color: #333;
+    
+}
+
+/* Logo */
+.logo {
+    text-align: left;
+    margin-bottom: 20px;
+    margin-left: 40px
+}
+
+/* Novo estilo */
+.nova {
+    margin: 20px auto; /* Margens */
+}
+
+/* Estilo para texto */
+.text {
+    background-color: rgb(235, 235, 235); /* Cor de fundo */
+    box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.3); /* Sombra */
+}
+
+/* Imagens dentro de .nova */
+.nova img {
+    max-width: 100%; /* Largura m�xima */
+    height: auto; /* Altura autom�tica */
+    display: block; /* Remover espa�os em branco */
+    border-radius: 8px; /* Borda arredondada */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Sombra */
+}
+
+/* Logo */
+.logo img {
+    width: 120px; /* Largura */
+    max-width: 100%;
+    margin-top: 15px;
+}
+
+/* Estilo para campos de entrada de texto */
+input[type="text"] {
+    width: calc(100% - 22px); /* Largura total */
+    padding: 10px;
+    margin-bottom: 20px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+
+/* Estilo para bot�es */
+input[type="button"] {
+    width: calc(100% - 22px); /* Largura total */
+    padding: 10px 20px;
+    background-color: #0056b3;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    margin-bottom: 10px;
+}
+
+/* Efeito hover nos bot�es */
+input[type="button"]:hover {
+    background-color: #007bff;
+}
+
+/* Resultado */
+#resultado {
+    margin-top: 20px;
+    font-weight: bold;
+    text-align: center; /* Centralizar texto */
+}
+
+/* Estilos para telas menores */
+@media screen and (max-width: 600px) {
+    .container {
+        width: 90%; /* Largura em telas menores */
+        margin: 20px auto;
+    }
+    .logo img {
+        width: 150px; /* Tamanho do logo em telas menores */
+    }
+    body {
+        background-position: left;
+    }
+}
+
+/* Bot�o verde */
+.green-button {
+    background-color: rgb(37, 211, 102);
+    color: white;
+    border: none;
+    padding: 10px;
+    width: 200px; /* Largura */
+    cursor: pointer;
+    border-radius: 5px;
+    margin: 10px auto; /* Margens */
+    box-sizing: border-box;
+    position: fixed; /* Bot�o flutuante */
+    bottom: 30px; /* Dist�ncia do fundo */
+    left: 50%; /* Posi��o horizontal */
+    transform: translateX(-50%); /* Centralizar horizontalmente */
+    z-index: 9999; /* Z-index */
+    font-weight: bold; /* Negrito */
+}
+
+/* Bot�o laranja */
+.orange-button {
+    background-color: #ff6300;
+    color: white;
+    border: none;
+    padding: 10px;
+    width: calc(100% - 22px); /* Largura total */
+    cursor: pointer;
+    border-radius: 5px;
+    box-sizing: border-box;
+    font-weight: bold; /* Negrito */
+}
+
+/* Efeito hover no bot�o verde */
+.green-button:hover {
+    background-color: darkgreen;
+}
+
+/* �cone do WhatsApp */
+.whatsapp-icon {
+    width: 20px; /* Largura */
+    margin-right: 5px; /* Espa�amento � direita */
+}
+
+/* Estilos para .vel e .sub */
+
+/* Estilos para .vel e .sub */
+.vel {
+    font-size: 25px;
+    color: #333;
+    text-align: center;
+    margin-top: 50px;
+}
+
+.sub {
+    font-size: 15px;
+    color: #666;
+    text-align: center;
+    margin-top: 10px;
+}
+
+
+.result {
+    font-size: 15px;
+    color: #666;
+    text-align: center;
+    margin-top: 10px;
+}

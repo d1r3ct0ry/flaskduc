@@ -1,0 +1,160 @@
+  <style>
+    .whatsapp-float { position: fixed; bottom: 20px; right: 20px; background-color: #25d366; color: white; border-radius: 50%; width: 60px; height: 60px; font-size: 28px; display: flex; align-items: center; justify-content: center; z-index: 9999; box-shadow: 0 2px 10px rgba(0,0,0,0.3); transition: background-color 0.3s; }
+    
+    body, html {
+      height: 100%;
+      font-family: 'Poppins', sans-serif;
+      background-color: rgb(255, 130, 53); /* Fundo laranja */
+      color: #ffffff; /* Texto branco */
+
+    }
+    .container {
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      padding-top: 60px; /* Espaço para a tarja */
+      width: 100%; /* Para ocupar toda a largura */
+    }
+    .logo {
+      width: 300px;
+      margin-bottom: 30px;
+    }
+    .top-banner {
+      background-color: rgb(255, 130, 53);
+      height: 60px; /* Altura da tarja */
+      width: 100%;
+      position: fixed; /* Fixa a tarja na parte superior */
+      top: 0;
+      left: 0;
+      display: flex;
+      align-items: center; /* Centraliza verticalmente */
+      justify-content: center; /* Centraliza horizontalmente */
+      color: white; /* Cor do texto */
+      font-weight: bold; /* Estilo do texto */
+      z-index: 1000; /* Garante que a tarja fique acima do conteúdo */
+    }
+    .btn-custom-orange {
+      background-color: rgb(255, 130, 53);
+      color: white;
+      border: none;
+      font-weight: bold;
+      height: 40px;
+      font-size: 16px;
+      width: 100%;
+      transition: background-color 0.3s;
+    }
+    
+    .btn-custom-orange:hover {
+      background-color: rgb(230, 115, 47);
+    }
+    .btn-custom-green {
+      background-color: rgb(30, 204, 97);
+      color: white;
+      border: none;
+      font-weight: bold;
+      height: 40px;
+      font-size: 16px;
+      width: 100%;
+      transition: background-color 0.3s;
+    }
+    .btn-custom-green:hover {
+      background-color: rgb(25, 170, 80);
+    }
+    
+    .btn-custom-green:focus,
+    .btn-custom-green:active {
+      background-color: #2ecc71 !important; /* Verde claro no hover */
+      color: #fff !important;
+      box-shadow: 0 5px 12px rgba(0,0,0,0.2);
+      transform: translateY(-2px);
+    }
+    }
+    .btn-custom-orange:hover {
+      background-color: rgb(230, 115, 47);
+    }
+    .margin-top-custom {
+      margin-top: 20px;
+    }
+    .form-control {
+      text-align: center;
+      font-size: 14px;
+      height: 40px;
+      width: 300px;
+    }
+    .form-control::placeholder {
+      font-size: 14px;
+      color: #aaa;
+    }
+    .desconto-texto {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 20px;
+      color: rgb(245, 245, 245);
+    }
+    .hidden {
+      display: none;
+    }
+    .visible {
+      display: block;
+    }
+    .form-group.row {
+      display: flex;
+      justify-content: space-between;
+    }
+    .terceira-tela-header {
+      font-weight: bold;
+      font-size: 22px;
+      margin-bottom: 15px;
+    }
+    .form-check {
+      margin-top: 15px;
+    }
+    .btn {
+      width: 100%;
+    }
+    .btn-link {
+      color: #ffffff !important;
+      font-weight: bold;
+      text-decoration: underline;
+    }
+    .btn-link:hover {
+      color: #f1f1f1 !important;
+      text-decoration: none;
+    }
+      
+    #segundaTela {
+      padding: 20px;
+    }
+    .whatsapp-float {
+      position: fixed;
+      bottom: 20px;
+      right: 20px; /* valor padrão para mobile */
+      background-color: #25d366;
+      color: white;
+      border-radius: 50%;
+      width: 60px;
+      height: 60px;
+      font-size: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+      transition: background-color 0.3s;
+    }
+    
+    /* Para desktop: alinha dentro da "container" branca */
+    @media (min-width: 768px) {
+      .whatsapp-float {
+        right: calc(50% - 300px + 20px); /* 50% da tela - metade da largura da .container + um espaçamento */
+      }
+    }
+    
+    .whatsapp-float:hover {
+      background-color: #1ebe5b;
+      color: white;
+    }
+
+  </style>

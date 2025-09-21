@@ -1,6 +1,20 @@
+# api/calcular-frete.py
 import os
-import requests
 import json
+import httpx
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
+
+app = FastAPI()
+
+# CORS completo
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # qualquer origem
+    allow_methods=["*"],  # POST, OPTIONS, etc
+    allow_headers=["*"],  # Content-Type, Authorization, etc
+)
 
 SUPERFRETE_TOKEN = os.environ.get("SUPERFRETE_TOKEN")
 if not SUPERFRETE_TOKEN:
@@ -13,26 +27,11 @@ SUPERFRETE_URL = (
     f"&content-type=application%2Fjson"
 )
 
-def handler(request):
-    # ✅ Preflight
-    if request.method == "OPTIONS":
-        return {}, 204, {
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "POST, OPTIONS",
-            "Access-Control-Allow-Headers": "Content-Type",
-        }
-
-    # Apenas POST
-    if request.method != "POST":
-        return {"erro": "Método não permitido"}, 405, {"Access-Control-Allow-Origin": "*"}
-
-    try:
-        data = request.json
-    except Exception:
-        data = None
-
+@app.post("/api/calcular-frete")
+async def calcular_frete(request: Request):
+    data = await request.json()
     if not data or "cepDestino" not in data or "pacote" not in data:
-        return {"erro": "JSON inválido ou campos ausentes"}, 400, {"Access-Control-Allow-Origin": "*"}
+        return JSONResponse({"erro": "JSON inválido ou campos ausentes"}, status_code=400)
 
     cep_destino = data["cepDestino"]
     pacote = data["pacote"]
@@ -55,18 +54,11 @@ def handler(request):
         }
     }
 
-    try:
-        response = requests.post(
-            SUPERFRETE_URL,
-            headers={"Content-Type": "application/json"},
-            data=json.dumps(payload),
-            timeout=10
-        )
+    async with httpx.AsyncClient(timeout=10) as client:
         try:
-            result = response.json()
-        except ValueError:
-            return {"erro": "Resposta não é JSON", "texto": response.text}, 502, {"Access-Control-Allow-Origin": "*"}
-    except requests.exceptions.RequestException as e:
-        return {"erro": "Falha na comunicação com SuperFrete", "detalhes": str(e)}, 502, {"Access-Control-Allow-Origin": "*"}
+            resp = await client.post(SUPERFRETE_URL, json=payload)
+            resp_json = resp.json()
+        except Exception as e:
+            return JSONResponse({"erro": "Falha na comunicação com SuperFrete", "detalhes": str(e)}, status_code=502)
 
-    return result, response.status_code, {"Access-Control-Allow-Origin": "*"}
+    return JSONResponse(resp_json, status_code=resp.status_code)

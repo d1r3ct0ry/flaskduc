@@ -1,31 +1,63 @@
 from flask import Flask, request, jsonify
-import requests
 from flask_cors import CORS
+import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 import json
+import os
+import time
+import uuid
+import logging
 
+# ==================== Configurações ====================
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "*"}})
+CORS(app)
 
-# 🔐 Token de autenticação da SuperFrete
-SUPERFRETE_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3NTY3NTQ3NzcsInN1YiI6IlkydGZOTWhHQVFaNXFQUmF5VG1hWFEzT0ZoNTIifQ.Oo0CzxnRtwOPmBBAJgQBIz4U06qcVmrwLOic8CnyDe0"
+# Logging estruturado
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+logger = logging.getLogger("superfrete-api")
 
-# 🧭 URL com token e headers como query strings (reproduzindo curl funcional)
+# Token da SuperFrete via variável de ambiente
+SUPERFRETE_TOKEN = os.environ.get("SUPERFRETE_TOKEN")
+if not SUPERFRETE_TOKEN:
+    logger.error("SUPERFRETE_TOKEN não configurado")
+    raise RuntimeError("SUPERFRETE_TOKEN não configurado")
+
+# URL base da SuperFrete
 SUPERFRETE_URL = (
-    f"https://api.superfrete.com/api/v0/calculator"
+    "https://api.superfrete.com/api/v0/calculator"
     f"?Authorization=Bearer%20{SUPERFRETE_TOKEN}"
-    f"&accept=application%2Fjson"
-    f"&content-type=application%2Fjson"
+    "&accept=application%2Fjson"
+    "&content-type=application%2Fjson"
 )
 
-@app.route("/calcular-frete", methods=["POST"])
+# Session com retry/backoff
+session = requests.Session()
+retries = Retry(
+    total=3,
+    backoff_factor=1,
+    status_forcelist=[429, 502, 503, 504],
+    allowed_methods=["POST"]
+)
+session.mount("https://", HTTPAdapter(max_retries=retries))
+
+# ==================== Endpoint ====================
+@app.route("/api/calcular-frete", methods=["POST"])
 def calcular_frete():
-    print("🚚 Nova requisição recebida para /calcular-frete")
+    request_id = str(uuid.uuid4())
+    start_time = time.time()
 
     data = request.get_json(silent=True)
-    print("📨 JSON recebido:", data)
 
+    # Validação de payload
     if not data or "cepDestino" not in data or "pacote" not in data:
-        return jsonify({"erro": "JSON inválido ou campos ausentes"}), 400
+        msg = "JSON inválido ou campos ausentes"
+        logger.warning(msg, extra={"request_id": request_id, "payload": data})
+        return jsonify({
+            "request_id": request_id,
+            "status": "erro",
+            "mensagem": msg
+        }), 400
 
     cep_destino = data["cepDestino"]
     pacote = data["pacote"]
@@ -40,7 +72,6 @@ def calcular_frete():
             "insurance_value": 0,
             "use_insurance_value": False
         },
-        # usa os valores enviados do frontend
         "package": {
             "height": pacote.get("height", 2),
             "width": pacote.get("width", 11),
@@ -49,41 +80,57 @@ def calcular_frete():
         }
     }
 
+    logger.info("Chamando SuperFrete", extra={"request_id": request_id, "payload": payload})
 
-    payload_json = json.dumps(payload)
-    print("📦 Payload JSON enviado para SuperFrete:")
-    print(payload_json)
-
-    headers = {
-        "Content-Type": "application/json"
-        # ❌ NÃO usa mais Authorization aqui, está na URL
-    }
-
-    # 3️⃣ Chamada para a API da SuperFrete
     try:
-        print(f"🌍 Fazendo requisição para SuperFrete: {SUPERFRETE_URL}")
-        print(f"📤 Headers enviados: {headers}")
-
-        response = requests.post(SUPERFRETE_URL, headers=headers, data=payload_json, timeout=10)
-        print(f"📬 Status code da SuperFrete: {response.status_code}")
+        response = session.post(
+            SUPERFRETE_URL,
+            headers={"Content-Type": "application/json"},
+            data=json.dumps(payload),
+            timeout=10
+        )
+        elapsed_time = round(time.time() - start_time, 3)
 
         try:
-            result = response.json()
-            print("📥 Resposta JSON da SuperFrete:")
-            print(json.dumps(result, indent=2, ensure_ascii=False))
+            resultado_json = response.json()
+            logger.info("Resposta recebida", extra={
+                "request_id": request_id,
+                "status_code": response.status_code,
+                "elapsed_time": elapsed_time
+            })
+            return jsonify({
+                "request_id": request_id,
+                "status": "ok",
+                "elapsed_time": elapsed_time,
+                "resultado": resultado_json
+            }), response.status_code
         except ValueError:
-            result = {"erro": "Resposta não é JSON", "texto": response.text}
-            print("⚠️ Resposta da SuperFrete não é JSON:")
-            print(response.text)
-            return jsonify(result), 502
+            msg = "Resposta da SuperFrete não é JSON"
+            logger.error(msg, extra={
+                "request_id": request_id,
+                "texto": response.text,
+                "elapsed_time": elapsed_time
+            })
+            return jsonify({
+                "request_id": request_id,
+                "status": "erro",
+                "mensagem": msg,
+                "texto": response.text
+            }), 502
 
     except requests.exceptions.RequestException as e:
-        print("❌ Erro ao chamar SuperFrete:", str(e))
-        result = {"erro": "Falha na comunicação com SuperFrete", "detalhes": str(e)}
-        return jsonify(result), 502
+        elapsed_time = round(time.time() - start_time, 3)
+        msg = "Falha na comunicação com SuperFrete"
+        logger.error(msg, extra={"request_id": request_id, "detalhes": str(e), "elapsed_time": elapsed_time})
+        return jsonify({
+            "request_id": request_id,
+            "status": "erro",
+            "mensagem": msg,
+            "detalhes": str(e),
+            "elapsed_time": elapsed_time
+        }), 502
 
-    # 4️⃣ Retornar SOMENTE o que a SuperFrete retornou
-    return jsonify(result), response.status_code
-
+# ==================== Run ====================
 if __name__ == "__main__":
     app.run(debug=True)
+

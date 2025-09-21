@@ -1,28 +1,14 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "api/calcular-frete.py",
-      "use": "@vercel/python",
-      "config": { "runtime": "python3.11" }
+  "functions": {
+    "api/*.py": {
+      "runtime": "python3.11"
     }
-  ],
+  },
   "routes": [
     {
-      "src": "/api/calcular-frete",
-      "methods": ["POST", "OPTIONS"],
-      "dest": "api/calcular-frete.py"
-    }
-  ],
-  "headers": [
-    {
-      "source": "/api/(.*)",
-      "headers": [
-        { "key": "Access-Control-Allow-Origin", "value": "https://ducentregas.com" },
-        { "key": "Access-Control-Allow-Methods", "value": "GET, POST, OPTIONS" },
-        { "key": "Access-Control-Allow-Headers", "value": "Content-Type, Authorization" },
-        { "key": "Access-Control-Allow-Credentials", "value": "true" }
-      ]
+      "src": "/api/(.*)",
+      "dest": "/api/calcular-frete.py"
     }
   ]
 }

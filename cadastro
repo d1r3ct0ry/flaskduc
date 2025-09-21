@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <title>Duc Entregas - Do Feirão para a sua Casa</title>
+    <style>
+        body {
+            background-color: orange;
+            font-family: 'Arial', sans-serif;
+        }
+        h2, h3 {
+            color: #000000; /* Laranja */
+        }
+        .form-control {
+            border-radius: 0.5rem;
+        }
+        .btn {
+            border-radius: 0.5rem;
+        }
+        .card {
+            border: none;
+            border-radius: 0.5rem;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .list-group-item {
+            cursor: pointer;
+        }
+        .list-group-item:hover {
+            background-color: #ffe0b2; /* Laranja claro ao passar o mouse */
+        }
+        label {
+            font-weight: bold; /* Negrito para todos os títulos */
+        }
+        .input-cep {
+            width: 120px; /* Ajuste o valor conforme necessário */
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container-fluid p-0 mt-5">
+        <div class="card p-4">
+            <form id="formEndereco">
+                <div class="d-flex flex-column align-items-md-start">
+                    <div class="d-flex justify-content-center mb-3 mb-md-0">
+                        <img src="/assets/logo.png" alt="Logo" class="img-fluid" style="max-width: 150px;">
+                    </div>
+                    <h2><b>Informe os Dados</b></h2>
+                </div>
+
+                <div class="form-group">
+                    <input type="text" class="form-control" id="nomeCliente" placeholder="Nome Completo" required autocomplete="name">
+                </div>
+                <div class="form-group">
+                    <input type="text" class="form-control" id="telefoneCliente" placeholder="Telefone" required autocomplete="tel">
+                </div>
+
+                <h2><b>Seu Endereço</b></h2>
+
+                <div class="form-group">
+                    <div class="input-group">
+                        <input type="text" class="form-control col-md-4" id="cep" placeholder="Digite seu CEP" autocomplete="postal-code" maxlength="10" oninput="formatarCep(this)">
+                        <div class="input-group-append">
+                            <button class="btn btn-primary" type="button" onclick="buscarEndereco()">Buscar</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group d-flex align-items-end mb-3">
+                    <div class="me-3" style="width: 500px;">
+                        <label for="cidade">Cidade</label>
+                        <input type="text" class="form-control" id="cidade" placeholder="" required autocomplete="address-level1">
+                    </div>
+                    <div style="width: 80px; margin-left: 20px;">
+                        <label for="uf">Estado</label>
+                        <input type="text" class="form-control" id="uf" placeholder="" required autocomplete="address-level1" maxlength="2">
+                    </div>
+                </div>
+
+                <div class="form-group mb-3">
+                    <label for="endereco">Endereço</label>
+                    <input type="text" class="form-control" id="endereco" placeholder="" required autocomplete="address-line1">
+                </div>
+
+                <div class="form-group d-flex align-items-end mb-3">
+                    <div class="me-3" style="width: 200px;">
+                        <label for="numero">Número</label>
+                        <input type="text" class="form-control" id="numero" placeholder="" required autocomplete="address-level2">
+                    </div>
+                    <div style="margin-left: 20px; flex-grow: 1;">
+                        <label for="bairro">Bairro</label>
+                        <input type="text" class="form-control" id="bairro" placeholder="" required autocomplete="address-level1">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="complemento">Complemento</label>
+                    <input type="text" class="form-control" id="complemento" placeholder="" required autocomplete="address-level2">
+                </div>
+
+                <button type="button" class="btn btn-primary" onclick="confirmarEndereco()">Confirmar Endereço</button>
+            </form>
+
+            <div id="dadosPedido" class="mt-5" style="display: none;">
+                <h3>Informe as Lojas</h3>
+                <div id="lojas">
+                    <div class="form-group position-relative">
+                        <label for="pesquisaLoja"></label>
+                        <input type="text" class="form-control" id="pesquisaLoja" placeholder="Digite o Nome da Loja" oninput="pesquisarLoja(this)" autocomplete="off">
+                        <div id="resultadoPesquisa" class="list-group position-absolute" style="z-index: 1000; width: 100%;"></div>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-secondary" onclick="adicionarLoja()">
+                    <i class="fas fa-plus"></i>
+                </button>
+                <button type="button" class="btn btn-success" onclick="confirmarPedidoFinal()">Confirmar Pedido</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function buscarEndereco() {
+            const cep = document.getElementById('cep').value.replace(/\D/g, '');
+            if (cep) {
+                fetch(`https://viacep.com.br/ws/${cep}/json/`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (!data.erro) {
+                            document.getElementById('endereco').value = data.logradouro;
+                            document.getElementById('bairro').value = data.bairro;
+                            document.getElementById('cidade').value = data.localidade;
+                            document.getElementById('uf').value = data.uf;
+                        } else {
+                            alert('CEP não encontrado.');
+                        }
+                    })
+                    .catch(() => alert('Erro ao buscar o CEP.'));
+            }
+        }
+
+        function confirmarEndereco() {
+            const dadosPedidoDiv = document.getElementById('dadosPedido');
+            dadosPedidoDiv.style.display = 'block'; // Torna visível a seção
+            dadosPedidoDiv.scrollIntoView({ behavior: 'smooth' }); // Rola para a seção
+        }
+
+        function adicionarLoja() {
+            const lojasDiv = document.getElementById('lojas');
+            const novaLoja = `
+                <div class="form-group position-relative">
+                    <input type="text" class="form-control" placeholder="Digite o nome da loja" oninput="pesquisarLoja(this)" autocomplete="off">
+                    <div class="list-group position-absolute" style="z-index: 1000; width: 100%;"></div>
+                </div>`;
+            lojasDiv.insertAdjacentHTML('beforeend', novaLoja);
+        }
+
+        function confirmarPedidoFinal() { 
+            const numero = document.getElementById('numero').value;
+            const complemento = document.getElementById('complemento').value;
+        
+            if (!numero || !complemento) {
+                alert('Por favor, preencha o Número e o Complemento obrigatórios.');
+                return;
+            }
+        
+            const telefoneCompleto = document.getElementById('telefoneCliente').value.replace(/\D/g, ''); 
+            const nomeCliente = document.getElementById('nomeCliente').value;
+            const endereco = document.getElementById('endereco').value;
+            const bairro = document.getElementById('bairro').value;
+            const cidade = document.getElementById('cidade').value;
+            const uf = document.getElementById('uf').value; 
+            const cep = document.getElementById('cep').value;
+        
+            const lojas = document.querySelectorAll('#lojas .form-group');
+            let lojaDados = [];
+            for (let i = 0; i < lojas.length; i++) {
+                const nomeLoja = lojas[i].querySelector('input').value;
+                if (nomeLoja) {
+                    lojaDados.push(nomeLoja);
+                }
+            }
+            const lojaTexto = lojaDados.join('\n'); 
+        
+            // Atualizando a mensagem para o formato desejado
+            const mensagem = `${telefoneCompleto}\n${nomeCliente}\n${endereco}, ${numero} - ${complemento}\n${bairro}, ${cidade} - ${uf}\n${cep}\n\n${lojaTexto}`;
+            const link = `https://api.whatsapp.com/send?phone=5521970970091&text=${encodeURIComponent(mensagem)}`;
+            window.open(link, '_blank');
+        
+            // Rolar a tela para o topo da seção de dados do pedido
+            document.getElementById('dadosPedido').scrollIntoView({ behavior: 'smooth' });
+        }
+
+
+
+
+        function pesquisarLoja(input) {
+            const nomeLoja = input.value;
+            const resultadoDiv = input.nextElementSibling;
+
+            if (nomeLoja.length === 0) {
+                resultadoDiv.innerHTML = '';
+                return;
+            }
+
+            fetch(`buscar_loja.php?nome=${encodeURIComponent(nomeLoja)}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Erro na resposta do servidor: ' + response.statusText);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    resultadoDiv.innerHTML = '';
+                    if (Array.isArray(data) && data.length > 0) {
+                        data.forEach(loja => {
+                            const item = document.createElement('a');
+                            item.className = 'list-group-item list-group-item-action';
+                            item.textContent = loja.NOME;
+                            item.onclick = () => selecionarLoja(loja.NOME, resultadoDiv);
+                            resultadoDiv.appendChild(item);
+                        });
+                    } 
+                })
+                .catch(error => {
+                    console.error('Erro:', error);
+                    resultadoDiv.innerHTML = '<div class="list-group-item">Erro ao buscar lojas: ' + error.message + '</div>';
+                });
+        }
+
+        function selecionarLoja(nome, resultadoDiv) {
+            const inputLoja = resultadoDiv.previousElementSibling;
+            inputLoja.value = nome;
+            resultadoDiv.innerHTML = '';
+        }
+        
+        function formatarCep(input) {
+            // Remove qualquer caractere que não seja dígito
+            let value = input.value.replace(/\D/g, '');
+        
+            // Adiciona o hífen após os cinco primeiros dígitos
+            if (value.length > 5) {
+                value = value.slice(0, 5) + '-' + value.slice(5, 8);
+            }
+        
+            // Atualiza o valor do campo
+            input.value = value;
+        }
+
+        function formatarTelefone(input) {
+            let value = input.value.replace(/\D/g, '');
+            if (value.length > 11) value = value.slice(0, 11);
+            if (value.length === 11) {
+                input.value = `(${value.slice(0, 2)}) ${value.slice(2, 7)}-${value.slice(7)}`;
+            } else if (value.length > 6) {
+                input.value = `(${value.slice(0, 2)}) ${value.slice(2, 7)}-${value.slice(7)}`;
+            } else if (value.length > 2) {
+                input.value = `(${value.slice(0, 2)}) ${value.slice(2)}`;
+            } else if (value.length > 0) {
+                input.value = `(${value}`;
+            }
+        }
+
+        document.getElementById('telefoneCliente').addEventListener('input', function() {
+            formatarTelefone(this);
+        });
+    </script>
+</body>
+</html>

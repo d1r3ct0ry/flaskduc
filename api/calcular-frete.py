@@ -3,35 +3,36 @@ import requests, os, json, uuid, time, logging
 
 app = Flask(__name__)
 
-# Logging simples
+# Logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("superfrete-api")
 
-# Token da SuperFrete (configurado no Vercel)
+# Token da SuperFrete (configure no Vercel)
 SUPERFRETE_TOKEN = os.environ.get("SUPERFRETE_TOKEN")
 if not SUPERFRETE_TOKEN:
     raise RuntimeError("SUPERFRETE_TOKEN não configurado")
 
 SUPERFRETE_URL = f"https://api.superfrete.com/api/v0/calculator?Authorization=Bearer%20{SUPERFRETE_TOKEN}"
 
-# Função helper para adicionar CORS em todas as respostas
+# Helper para respostas com CORS
 def cors_response(payload, status=200):
     response = make_response(jsonify(payload), status)
-    response.headers["Access-Control-Allow-Origin"] = "*"  # Permite qualquer domínio
+    response.headers["Access-Control-Allow-Origin"] = "https://ducentregas.com/correios"
     response.headers["Access-Control-Allow-Methods"] = "POST, OPTIONS"
-    response.headers["Access-Control-Allow-Headers"] = "Content-Type"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+    response.headers["Access-Control-Allow-Credentials"] = "true"
     return response
 
 @app.route("/api/calcular-frete", methods=["POST", "OPTIONS"])
 def calcular_frete():
     # Resposta de pré-flight OPTIONS
     if request.method == "OPTIONS":
-        return cors_response({"status":"ok"}, 200)
+        return cors_response({"status": "ok"}, 200)
 
     request_id = str(uuid.uuid4())
     start_time = time.time()
-
     data = request.get_json(silent=True)
+
     if not data or "cepDestino" not in data or "pacote" not in data:
         return cors_response({
             "request_id": request_id,
@@ -61,7 +62,7 @@ def calcular_frete():
     }
 
     try:
-        resp = requests.post(SUPERFRETE_URL, headers={"Content-Type":"application/json"}, json=payload, timeout=10)
+        resp = requests.post(SUPERFRETE_URL, headers={"Content-Type": "application/json"}, json=payload, timeout=10)
         resultado_json = resp.json()
         elapsed_time = round(time.time() - start_time, 3)
         return cors_response({

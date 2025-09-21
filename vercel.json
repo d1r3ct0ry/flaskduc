@@ -3,7 +3,7 @@
   "routes": [
     {
       "src": "/api/calcular-frete",
-      "dest": "/api/main.py"
+      "dest": "/api/calcular-frete.py"
     }
   ]
 }
